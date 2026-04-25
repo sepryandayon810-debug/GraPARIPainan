@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraPARI Painan - Order Manager</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --success: #34a853;
+    --danger: #ea4335;
+    --warning: #fbbc04;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #202124;
+    --muted: #5f6368;
+    --border: #dadce0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
+  header {
+    background: linear-gradient(90deg, #1a73e8, #4285f4);
+    color: white;
+    padding: 18px 16px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .tab {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 10px;
+    background: #e8eaed;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .2s;
+  }
+  .tab.active { background: var(--primary); color: white; box-shadow: 0 2px 6px rgba(26,115,232,0.3); }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn .3s; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform: translateY(0);} }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+    transition: border .2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: white;
+    background: var(--primary);
+    transition: transform .1s, opacity .2s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-success { background: var(--success); }
+  .btn-danger { background: var(--danger); }
+  .btn-warning { background: var(--warning); color: #222; }
+
+  .result-box { margin-top: 14px; }
+  .order-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .order-title { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+  .order-meta { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .bg-closed { background: #e6f4ea; color: #1e8e3e; }
+  .bg-cancelled { background: #fce8e6; color: #d93025; }
+  .bg-eskalated { background: #fef3e8; color: #b06000; }
+  .bg-default { background: #e8eaed; color: var(--muted); }
+
+  .status-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .status-actions .btn { flex: 1; font-size: 13px; padding: 10px; }
+
+  .summary-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .summary-item {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+  .summary-num { font-size: 22px; font-weight: 800; }
+  .summary-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
+  .loading { text-align: center; color: var(--primary); padding: 20px; font-size: 14px; font-weight: 600; }
+  .error { background: #fce8e6; color: #d93025; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
+  .success-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #202124;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all .3s;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    white-space: nowrap;
+  }
+  .success-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<header>GraPARI Painan &mdash; Order Manager</header>
+
+<div class="container">
+
+  <!-- ==============================
+       KONFIGURASI URL GAS (GANTI!)
+       ============================== -->
+  <div class="card" style="padding:12px 14px; margin-bottom:10px; background:#e8f0fe; border-color:#aecbfa;">
+    <label style="margin-bottom:4px; color:#174ea6;">🔗 URL Web App GAS</label>
+    <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" 
+           value="" style="font-size:13px; padding:10px;">
+    <div style="font-size:11px; color:#5f6368; margin-top:6px;">
+      Paste URL hasil deploy GAS di sini. Tanpa ini, semua fitur tidak akan jalan.
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tab1')">Cek & Update</button>
+    <button class="tab" onclick="switchTab('tab2')">Rekap Order</button>
+    <button class="tab" onclick="switchTab('tab3')">Cek KIP</button>
+  </div>
+
+  <!-- ==============================
+       PANEL 1: CEK ORDER + UPDATE STATUS
+       ============================== -->
+  <div id="tab1" class="panel active">
+    <div class="card">
+      <div class="form-group">
+        <label>Nomor Pelaporan</label>
+        <input type="text" id="inpNomor" placeholder="Contoh: MOk4250825113017734511cf0" autocomplete="off">
+      </div>
+      <button class="btn" onclick="cekOrderByNomor()">🔍 Cek Order</button>
+      <div id="res1"></div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       PANEL 2: REKAP / FILTER ORDER
+       ============================== -->
+  <div id="tab2" class="panel">
+    <div class="card">
+      <div style="display:flex; gap:8px;">
+        <div class="form-group" style="flex:1">
+          <label>Kode</label>
+          <select id="inpKode">
+            <option value="AO">AO</option>
+            <option value="MO">MO</option>
+            <option value="RO">RO</option>
+            <option value="PDA">PDA</option>
+            <option value="DO">DO</option>
+            <option value="SO">SO</option>
+            <option value="PP">PP</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1.2">
+          <label>Bulan</label>
+          <select id="inpBulan">
+            <option value="JANUARI">Januari</option>
+            <option value="FEBRUARI">Februari</option>
+            <option value="MARET">Maret</option>
+            <option value="APRIL">April</option>
+            <option value="MEI">Mei</option>
+            <option value="JUNI">Juni</option>
+            <option value="JULI">Juli</option>
+            <option value="AGUSTUS" selected>Agustus</option>
+            <option value="SEPTEMBER">September</option>
+            <option value="OKTOBER">Oktober</option>
+            <option value="NOVEMBER">November</option>
+            <option value="DESEMBER">Desember</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Tahun</label>
+          <input type="number" id="inpTahun" value="2025">
+        </div>
+      </div>
+      <button class="btn" onclick="cekOrderByFilter()">📊 Tampilkan Rekap</button>
+      <div id="res2"></div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       PANEL 3: CEK KIP (by Nomor Antre Aja)
+       ============================== -->
+  <div id="tab3" class="panel">
+    <div class="card">
+      <div class="form-group">
+        <label>Nomor Antre Aja / ID Case</label>
+        <input type="text" id="inpKIP" placeholder="Masukkan Nomor Antre Aja" autocomplete="off">
+      </div>
+      <button class="btn" onclick="cekKIP()">🆔 Cek KIP</button>
+      <div id="res3"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="success-toast">✅ Status berhasil diupdate!</div>
+
+<script>
+// ==============================
+// UTILS
+// ==============================
+function getGasUrl() {
+  const url = document.getElementById('gasUrl').value.trim();
+  if (!url) {
+    alert('⚠️ URL Web App GAS belum diisi! Paste di kotak biru paling atas.');
+    return null;
+  }
+  return url;
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function badgeClass(status) {
+  const s = (status || '').toString().trim().toUpperCase();
+  if (s === 'CLOSED') return 'bg-closed';
+  if (s === 'CANCELLED') return 'bg-cancelled';
+  if (s === 'ESKALATED') return 'bg-eskalated';
+  return 'bg-default';
+}
+
+// ==============================
+// 1. CEK ORDER BY NOMOR + UPDATE
+// ==============================
+async function cekOrderByNomor() {
+  const url = getGasUrl();
+  if (!url) return;
+  const nomor = document.getElementById('inpNomor').value.trim();
+  if (!nomor) { alert('Nomor Pelaporan wajib diisi'); return; }
+
+  const resDiv = document.getElementById('res1');
+  resDiv.innerHTML = '<div class="loading">⏳ Mencari di Google Sheets...</div>';
+
+  try {
+    const resp = await fetch(`${url}?action=cekOrderByNomor&nomor=${encodeURIComponent(nomor)}`);
+    const data = await resp.json();
+
+    if (!data.success) {
+      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+      return;
+    }
+
+    if (data.total === 0) {
+      resDiv.innerHTML = '<div class="empty">Nomor Pelaporan tidak ditemukan di Sheet DATA PAINAN.</div>';
+      return;
+    }
+
+    let html = `<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Ditemukan ${data.total} data:</div>`;
+    html += '<div class="result-box">';
+
+    data.data.forEach((item, idx) => {
+      html += `
+        <div class="order-card" id="card-${idx}">
+          <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
+          <div class="order-meta">
+            Nomor: <b>${item.nomorPelaporan}</b><br>
+            NIK CS: ${item.nikCS || '-'}<br>
+            Layanan: ${item.jenisLayanan || '-'}<br>
+            Keterangan: ${item.keterangan || '-'}<br>
+            Status saat ini: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || 'BELUM ADA'}</span>
+          </div>
+          <div class="status-actions">
+            <button class="btn btn-success" onclick="updateStatus('${item.nomorPelaporan}', 'CLOSED', ${idx})">✅ CLOSED</button>
+            <button class="btn btn-danger" onclick="updateStatus('${item.nomorPelaporan}', 'CANCELLED', ${idx})">❌ CANCELLED</button>
+            <button class="btn btn-warning" onclick="updateStatus('${item.nomorPelaporan}', 'ESKALATED', ${idx})">⚠️ ESKALATED</button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    resDiv.innerHTML = html;
+
+  } catch (err) {
+    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
+  }
+}
+
+async function updateStatus(nomor, status, idx) {
+  const url = getGasUrl();
+  if (!url) return;
+
+  // Disable tombol di card ini
+  const card = document.getElementById(`card-${idx}`);
+  const btns = card.querySelectorAll('.status-actions .btn');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateStatus', nomorPelaporan: nomor, statusBaru: status })
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      showToast(`✅ ${nomor} → ${status}`);
+      // Update badge visual langsung tanpa reload
+      const badge = card.querySelector('.badge');
+      badge.className = `badge ${badgeClass(status)}`;
+      badge.textContent = status;
+    } else {
+      alert('❌ Gagal update: ' + data.error);
+    }
+  } catch (err) {
+    alert('❌ Error: ' + err.message);
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+// ==============================
+// 2. REKAP ORDER BY FILTER
+// ==============================
+async function cekOrderByFilter() {
+  const url = getGasUrl();
+  if (!url) return;
+  const kode = document.getElementById('inpKode').value;
+  const bulan = document.getElementById('inpBulan').value;
+  const tahun = document.getElementById('inpTahun').value;
+
+  const resDiv = document.getElementById('res2');
+  resDiv.innerHTML = '<div class="loading">⏳ Mengambil data dari Sheet GABUNGAN ORDER...</div>';
+
+  try {
+    const resp = await fetch(`${url}?action=cekOrderByFilter&kode=${encodeURIComponent(kode)}&bulan=${encodeURIComponent(bulan)}&tahun=${encodeURIComponent(tahun)}`);
+    const data = await resp.json();
+
+    if (!data.success) {
+      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+      return;
+    }
+
+    if (data.total === 0) {
+      resDiv.innerHTML = '<div class="empty">Tidak ada order untuk filter ini.</div>';
+      return;
+    }
+
+    const s = data.summary;
+    let html = `
+      <div class="summary-bar">
+        <div class="summary-item"><div class="summary-num" style="color:var(--success)">${s.CLOSED}</div><div class="summary-label">Closed</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:var(--danger)">${s.CANCELLED}</div><div class="summary-label">Cancelled</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:var(--warning)">${s.ESKALATED}</div><div class="summary-label">Eskalated</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:var(--primary)">${data.total}</div><div class="summary-label">Total</div></div>
+      </div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Detail ${data.total} order:</div>
+      <div class="result-box">
+    `;
+
+    data.data.forEach(item => {
+      html += `
+        <div class="order-card">
+          <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
+          <div class="order-meta">
+            Nomor: <b>${item.nomorPelaporan}</b> &bull; ${item.awalan} ${item.bulan} ${item.tahun}<br>
+            Status: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || '-'}</span>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    resDiv.innerHTML = html;
+
+  } catch (err) {
+    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
+  }
+}
+
+// ==============================
+// 3. CEK KIP
+// ==============================
+async function cekKIP() {
+  const url = getGasUrl();
+  if (!url) return;
+  const id = document.getElementById('inpKIP').value.trim();
+  if (!id) { alert('ID/Nomor Antre Aja wajib diisi'); return; }
+
+  const resDiv = document.getElementById('res3');
+  resDiv.innerHTML = '<div class="loading">⏳ Mencari ID di Sheet DATA PAINAN...</div>';
+
+  try {
+    const resp = await fetch(`${url}?action=cekKIP&id=${encodeURIComponent(id)}`);
+    const data = await resp.json();
+
+    if (!data.success) {
+      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+      return;
+    }
+
+    if (data.total === 0) {
+      resDiv.innerHTML = '<div class="empty">ID tidak ditemukan.</div>';
+      return;
+    }
+
+    let html = '<div class="result-box">';
+    data.data.forEach(item => {
+      html += `
+        <div class="order-card">
+          <div class="order-title">KIP ID: ${item.nomorAntreAja}</div>
+          <div class="order-meta">
+            Tanggal: ${item.tanggal || '-'}<br>
+            Antrian: ${item.nomorAntrian || '-'}<br>
+            Petugas (NIK): ${item.nikCS || '-'}<br>
+            Indihome: ${item.indihome || '-'}<br>
+            Evidence: <a href="${item.evidence || '#'})" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    resDiv.innerHTML = html;
+
+  } catch (err) {
+    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
+  }
+}
+</script>
+
+</body>
+</html>
