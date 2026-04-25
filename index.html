@@ -446,10 +446,12 @@ function showProgress(id, show) {
 }
 
 /* ================================
-   GAS REQUEST
+   GAS REQUEST — FIX: tambah &_=timestamp
    ================================ */
 async function gasRequest(params) {
   if (!gasUrl) throw new Error('URL GAS belum dikonfigurasi. Klik ikon ⚙️ di pojok kanan atas.');
+  // TAMBAH &_=timestamp supaya selalu bypass cache
+  params._ = Date.now();
   const qs = new URLSearchParams(params).toString();
   const res = await fetch(gasUrl + '?' + qs);
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -459,7 +461,7 @@ async function gasRequest(params) {
 }
 
 /* ================================
-   WARM-UP: Jaga GAS tetap hidup
+   WARM-UP
    ================================ */
 async function ping() {
   if (!gasUrl) return;
@@ -469,20 +471,13 @@ async function ping() {
     lastPingTime = Date.now();
     $('btnSettings').classList.add('connected');
     $('liveDot').style.display = 'block';
-  } catch (e) {
-    // Silent fail
-  }
+  } catch (e) {}
 }
 
 function startKeepAlive() {
   if (pingInterval) clearInterval(pingInterval);
-  ping(); // ping sekarang
-  // Ping setiap 25 detik (GAS tidur setelah ~30-60 detik idle)
+  ping();
   pingInterval = setInterval(ping, 25000);
-}
-
-function stopKeepAlive() {
-  if (pingInterval) clearInterval(pingInterval);
 }
 
 /* ================================
@@ -555,7 +550,6 @@ async function cekOrderByNomor() {
 
     let html = '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">' +
       'Ditemukan ' + data.total + ' data <span class="speed-badge ' + speedClass + '">' + speedText + '</span>' +
-      (data.cached ? ' <span class="speed-badge speed-fast">🚀 Cached</span>' : '') +
       '</div>';
 
     data.data.forEach(function(item, idx) {
@@ -649,7 +643,6 @@ async function cekKIP() {
 
     let html = '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">' +
       'Ditemukan ' + data.total + ' data <span class="speed-badge ' + speedClass + '">' + speedText + '</span>' +
-      (data.cached ? ' <span class="speed-badge speed-fast">🚀 Cached</span>' : '') +
       '</div>';
 
     data.data.forEach(function(item) {
@@ -696,18 +689,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Enter') cekKIP();
   });
 
-  // Warm-up + keep alive
   if (gasUrl) {
     startKeepAlive();
   } else {
     setTimeout(openSettings, 300);
   }
 
-  // Ping saat tab aktif lagi (user kembali dari tab lain)
   document.addEventListener('visibilitychange', function() {
     if (!document.hidden && gasUrl) {
       const idle = Date.now() - lastPingTime;
-      if (idle > 20000) ping(); // kalau idle > 20 detik, ping langsung
+      if (idle > 20000) ping();
     }
   });
 });
