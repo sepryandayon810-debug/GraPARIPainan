@@ -126,22 +126,6 @@
   }
   .status-actions .btn { flex: 1; font-size: 13px; padding: 10px; }
 
-  .summary-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .summary-item {
-    flex: 1;
-    text-align: center;
-    padding: 12px;
-    border-radius: 12px;
-    background: #fff;
-    border: 1px solid var(--border);
-  }
-  .summary-num { font-size: 22px; font-weight: 800; }
-  .summary-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
-
   .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
   .loading { text-align: center; color: var(--primary); padding: 20px; font-size: 14px; font-weight: 600; }
   .error { background: #fce8e6; color: #d93025; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
@@ -163,6 +147,34 @@
     white-space: nowrap;
   }
   .success-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .gas-config {
+    background: #e8f0fe;
+    border: 1.5px solid #aecbfa;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .gas-config label { color: #174ea6; margin-bottom: 6px; }
+  .gas-config input {
+    background: white;
+    border-color: #aecbfa;
+  }
+  .gas-config .hint {
+    font-size: 11px;
+    color: #5f6368;
+    margin-top: 6px;
+  }
+  .gas-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .gas-status.ok { color: var(--success); }
+  .gas-status.err { color: var(--danger); }
 </style>
 <base target="_blank">
 </head>
@@ -172,11 +184,18 @@
 
 <div class="container">
 
+  <!-- KONFIGURASI GAS URL -->
+  <div class="gas-config">
+    <label>🔗 URL Web App GAS</label>
+    <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" value="">
+    <div class="hint">Paste URL deploy GAS di sini. Simpan ke localStorage otomatis.</div>
+    <div class="gas-status err" id="gasStatus"><i class="fas fa-circle"></i> Belum terhubung</div>
+  </div>
+
   <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="switchTab('tab1')">Cek & Update</button>
-    <button class="tab" onclick="switchTab('tab2')">Rekap Order</button>
-    <button class="tab" onclick="switchTab('tab3')">Cek KIP</button>
+    <button class="tab" onclick="switchTab('tab2')">Cek KIP</button>
   </div>
 
   <!-- PANEL 1: CEK ORDER + UPDATE STATUS -->
@@ -191,51 +210,8 @@
     </div>
   </div>
 
-  <!-- PANEL 2: REKAP / FILTER ORDER -->
+  <!-- PANEL 2: CEK KIP -->
   <div id="tab2" class="panel">
-    <div class="card">
-      <div style="display:flex; gap:8px;">
-        <div class="form-group" style="flex:1">
-          <label>Kode</label>
-          <select id="inpKode">
-            <option value="AO">AO</option>
-            <option value="MO">MO</option>
-            <option value="RO">RO</option>
-            <option value="PDA">PDA</option>
-            <option value="DO">DO</option>
-            <option value="SO">SO</option>
-            <option value="PP">PP</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:1.2">
-          <label>Bulan</label>
-          <select id="inpBulan">
-            <option value="JANUARI">Januari</option>
-            <option value="FEBRUARI">Februari</option>
-            <option value="MARET">Maret</option>
-            <option value="APRIL">April</option>
-            <option value="MEI">Mei</option>
-            <option value="JUNI">Juni</option>
-            <option value="JULI">Juli</option>
-            <option value="AGUSTUS" selected>Agustus</option>
-            <option value="SEPTEMBER">September</option>
-            <option value="OKTOBER">Oktober</option>
-            <option value="NOVEMBER">November</option>
-            <option value="DESEMBER">Desember</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:1">
-          <label>Tahun</label>
-          <input type="number" id="inpTahun" value="2025">
-        </div>
-      </div>
-      <button class="btn" onclick="cekOrderByFilter()">📊 Tampilkan Rekap</button>
-      <div id="res2"></div>
-    </div>
-  </div>
-
-  <!-- PANEL 3: CEK KIP -->
-  <div id="tab3" class="panel">
     <div class="card">
       <div class="form-group">
         <label>Nomor Antre Aja / ID Case</label>
@@ -248,13 +224,38 @@
 
 </div>
 
-<!-- Toast Notification -->
+<!-- Toast -->
 <div id="toast" class="success-toast">✅ Status berhasil diupdate!</div>
 
 <script>
-// ==============================
-// UTILS
-// ==============================
+// ========================================
+// KONFIGURASI & UTILS (sama persis proyek lama)
+// ========================================
+const GAS_URL_KEY = 'grapari_gas_url';
+
+function getGasUrl() {
+  const url = document.getElementById('gasUrl').value.trim();
+  if (!url) {
+    const saved = localStorage.getItem(GAS_URL_KEY);
+    if (saved) {
+      document.getElementById('gasUrl').value = saved;
+      return saved;
+    }
+    return null;
+  }
+  return url;
+}
+
+function saveGasUrl(url) {
+  localStorage.setItem(GAS_URL_KEY, url);
+}
+
+function updateGasStatus(connected, msg) {
+  const el = document.getElementById('gasStatus');
+  el.className = 'gas-status ' + (connected ? 'ok' : 'err');
+  el.innerHTML = '<i class="fas fa-circle"></i> ' + (msg || (connected ? 'Terhubung' : 'Belum terhubung'));
+}
+
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -277,183 +278,159 @@ function badgeClass(status) {
   return 'bg-default';
 }
 
-// ==============================
-// 1. CEK ORDER BY NOMOR (google.script.run)
-// ==============================
-function cekOrderByNomor() {
+// ========================================
+// GAS REQUEST — SAMA PERSIS PROYEK LAMA
+// ========================================
+async function gasRequest(params) {
+  const url = getGasUrl();
+  if (!url) throw new Error('URL GAS belum dikonfigurasi');
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(url + '?' + qs);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'Terjadi kesalahan');
+  return json;
+}
+
+// ========================================
+// 1. CEK ORDER BY NOMOR
+// ========================================
+async function cekOrderByNomor() {
   const nomor = document.getElementById('inpNomor').value.trim();
   if (!nomor) { alert('Nomor Pelaporan wajib diisi'); return; }
 
   const resDiv = document.getElementById('res1');
   resDiv.innerHTML = '<div class="loading">⏳ Mencari di Google Sheets...</div>';
 
-  google.script.run
-    .withSuccessHandler(function(data) {
-      if (!data.success) {
-        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
-        return;
-      }
-      if (data.total === 0) {
-        resDiv.innerHTML = '<div class="empty">Nomor Pelaporan tidak ditemukan di Sheet DATA PAINAN.</div>';
-        return;
-      }
+  try {
+    const data = await gasRequest({ action: 'cekOrderByNomor', nomor: nomor });
 
-      let html = '<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Ditemukan ' + data.total + ' data:</div>';
-      html += '<div class="result-box">';
+    if (data.total === 0) {
+      resDiv.innerHTML = '<div class="empty">Nomor Pelaporan tidak ditemukan di Sheet DATA PAINAN.</div>';
+      return;
+    }
 
-      data.data.forEach(function(item, idx) {
-        html += `
-          <div class="order-card" id="card-${idx}">
-            <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
-            <div class="order-meta">
-              Nomor: <b>${item.nomorPelaporan}</b><br>
-              NIK CS: ${item.nikCS || '-'}<br>
-              Layanan: ${item.jenisLayanan || '-'}<br>
-              Keterangan: ${item.keterangan || '-'}<br>
-              Status saat ini: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || 'BELUM ADA'}</span>
-            </div>
-            <div class="status-actions">
-              <button class="btn btn-success" onclick="updateStatus('${item.nomorPelaporan}', 'CLOSED', ${idx})">✅ CLOSED</button>
-              <button class="btn btn-danger" onclick="updateStatus('${item.nomorPelaporan}', 'CANCELLED', ${idx})">❌ CANCELLED</button>
-              <button class="btn btn-warning" onclick="updateStatus('${item.nomorPelaporan}', 'ESKALATED', ${idx})">⚠️ ESKALATED</button>
-            </div>
+    let html = '<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Ditemukan ' + data.total + ' data:</div>';
+    html += '<div class="result-box">';
+
+    data.data.forEach(function(item, idx) {
+      html += `
+        <div class="order-card" id="card-${idx}">
+          <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
+          <div class="order-meta">
+            Nomor: <b>${item.nomorPelaporan}</b><br>
+            NIK CS: ${item.nikCS || '-'}<br>
+            Layanan: ${item.jenisLayanan || '-'}<br>
+            Keterangan: ${item.keterangan || '-'}<br>
+            Status saat ini: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || 'BELUM ADA'}</span>
           </div>
-        `;
-      });
-      html += '</div>';
-      resDiv.innerHTML = html;
-    })
-    .withFailureHandler(function(err) {
-      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
-    })
-    .cekOrderByNomor(nomor);
+          <div class="status-actions">
+            <button class="btn btn-success" onclick="updateStatus('${item.nomorPelaporan}', 'CLOSED', ${idx})">✅ CLOSED</button>
+            <button class="btn btn-danger" onclick="updateStatus('${item.nomorPelaporan}', 'CANCELLED', ${idx})">❌ CANCELLED</button>
+            <button class="btn btn-warning" onclick="updateStatus('${item.nomorPelaporan}', 'ESKALATED', ${idx})">⚠️ ESKALATED</button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    resDiv.innerHTML = html;
+
+  } catch (err) {
+    resDiv.innerHTML = '<div class="error">❌ ' + err.message + '</div>';
+  }
 }
 
-// ==============================
-// UPDATE STATUS (google.script.run)
-// ==============================
-function updateStatus(nomor, status, idx) {
+// ========================================
+// UPDATE STATUS (GET — sama persis proyek lama)
+// ========================================
+async function updateStatus(nomor, status, idx) {
   const card = document.getElementById('card-' + idx);
   const btns = card.querySelectorAll('.status-actions .btn');
   btns.forEach(function(b) { b.disabled = true; });
 
-  google.script.run
-    .withSuccessHandler(function(data) {
-      if (data.success) {
-        showToast('✅ ' + nomor + ' → ' + status);
-        const badge = card.querySelector('.badge');
-        badge.className = 'badge ' + badgeClass(status);
-        badge.textContent = status;
-      } else {
-        alert('❌ Gagal update: ' + data.error);
-      }
-      btns.forEach(function(b) { b.disabled = false; });
-    })
-    .withFailureHandler(function(err) {
-      alert('❌ Error: ' + err.message);
-      btns.forEach(function(b) { b.disabled = false; });
-    })
-    .updateStatus(nomor, status);
+  try {
+    const data = await gasRequest({
+      action: 'updateStatus',
+      nomorPelaporan: nomor,
+      statusBaru: status
+    });
+
+    showToast('✅ ' + nomor + ' → ' + status);
+    const badge = card.querySelector('.badge');
+    badge.className = 'badge ' + badgeClass(status);
+    badge.textContent = status;
+
+  } catch (err) {
+    alert('❌ Gagal update: ' + err.message);
+  } finally {
+    btns.forEach(function(b) { b.disabled = false; });
+  }
 }
 
-// ==============================
-// 2. REKAP ORDER BY FILTER (google.script.run)
-// ==============================
-function cekOrderByFilter() {
-  const kode = document.getElementById('inpKode').value;
-  const bulan = document.getElementById('inpBulan').value;
-  const tahun = document.getElementById('inpTahun').value.toString();
-
-  const resDiv = document.getElementById('res2');
-  resDiv.innerHTML = '<div class="loading">⏳ Mengambil data dari Sheet GABUNGAN ORDER...</div>';
-
-  google.script.run
-    .withSuccessHandler(function(data) {
-      if (!data.success) {
-        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
-        return;
-      }
-      if (data.total === 0) {
-        resDiv.innerHTML = '<div class="empty">Tidak ada order untuk filter ini.</div>';
-        return;
-      }
-
-      const s = data.summary;
-      let html = `
-        <div class="summary-bar">
-          <div class="summary-item"><div class="summary-num" style="color:var(--success)">${s.CLOSED}</div><div class="summary-label">Closed</div></div>
-          <div class="summary-item"><div class="summary-num" style="color:var(--danger)">${s.CANCELLED}</div><div class="summary-label">Cancelled</div></div>
-          <div class="summary-item"><div class="summary-num" style="color:var(--warning)">${s.ESKALATED}</div><div class="summary-label">Eskalated</div></div>
-          <div class="summary-item"><div class="summary-num" style="color:var(--primary)">${data.total}</div><div class="summary-label">Total</div></div>
-        </div>
-        <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Detail ${data.total} order:</div>
-        <div class="result-box">
-      `;
-
-      data.data.forEach(function(item) {
-        html += `
-          <div class="order-card">
-            <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
-            <div class="order-meta">
-              Nomor: <b>${item.nomorPelaporan}</b> &bull; ${item.awalan} ${item.bulan} ${item.tahun}<br>
-              Status: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || '-'}</span>
-            </div>
-          </div>
-        `;
-      });
-      html += '</div>';
-      resDiv.innerHTML = html;
-    })
-    .withFailureHandler(function(err) {
-      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
-    })
-    .cekOrderByFilter(kode, bulan, tahun);
-}
-
-// ==============================
-// 3. CEK KIP (google.script.run)
-// ==============================
-function cekKIP() {
+// ========================================
+// 2. CEK KIP
+// ========================================
+async function cekKIP() {
   const id = document.getElementById('inpKIP').value.trim();
   if (!id) { alert('ID/Nomor Antre Aja wajib diisi'); return; }
 
   const resDiv = document.getElementById('res3');
   resDiv.innerHTML = '<div class="loading">⏳ Mencari ID di Sheet DATA PAINAN...</div>';
 
-  google.script.run
-    .withSuccessHandler(function(data) {
-      if (!data.success) {
-        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
-        return;
-      }
-      if (data.total === 0) {
-        resDiv.innerHTML = '<div class="empty">ID tidak ditemukan.</div>';
-        return;
-      }
+  try {
+    const data = await gasRequest({ action: 'cekKIP', id: id });
 
-      let html = '<div class="result-box">';
-      data.data.forEach(function(item) {
-        html += `
-          <div class="order-card">
-            <div class="order-title">KIP ID: ${item.nomorAntreAja}</div>
-            <div class="order-meta">
-              Tanggal: ${item.tanggal || '-'}<br>
-              Antrian: ${item.nomorAntrian || '-'}<br>
-              Petugas (NIK): ${item.nikCS || '-'}<br>
-              Indihome: ${item.indihome || '-'}<br>
-              Evidence: <a href="${item.evidence || '#'}" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
-            </div>
+    if (data.total === 0) {
+      resDiv.innerHTML = '<div class="empty">ID tidak ditemukan.</div>';
+      return;
+    }
+
+    let html = '<div class="result-box">';
+    data.data.forEach(function(item) {
+      html += `
+        <div class="order-card">
+          <div class="order-title">KIP ID: ${item.nomorAntreAja}</div>
+          <div class="order-meta">
+            Tanggal: ${item.tanggal || '-'}<br>
+            Antrian: ${item.nomorAntrian || '-'}<br>
+            Petugas (NIK): ${item.nikCS || '-'}<br>
+            Indihome: ${item.indihome || '-'}<br>
+            Evidence: <a href="${item.evidence || '#'}" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
           </div>
-        `;
-      });
-      html += '</div>';
-      resDiv.innerHTML = html;
-    })
-    .withFailureHandler(function(err) {
-      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
-    })
-    .cekKIP(id);
+        </div>
+      `;
+    });
+    html += '</div>';
+    resDiv.innerHTML = html;
+
+  } catch (err) {
+    resDiv.innerHTML = '<div class="error">❌ ' + err.message + '</div>';
+  }
 }
+
+// ========================================
+// INIT
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Load URL dari localStorage
+  const saved = localStorage.getItem(GAS_URL_KEY);
+  if (saved) {
+    document.getElementById('gasUrl').value = saved;
+  }
+
+  // Auto-save URL saat blur
+  document.getElementById('gasUrl').addEventListener('blur', function() {
+    saveGasUrl(this.value.trim());
+  });
+
+  // Test koneksi otomatis kalau URL sudah ada
+  const url = getGasUrl();
+  if (url) {
+    gasRequest({ action: 'test' })
+      .then(() => updateGasStatus(true, 'Terhubung ke KKM'))
+      .catch(() => updateGasStatus(false, 'Gagal terhubung'));
+  }
+});
 </script>
 
 </body>
