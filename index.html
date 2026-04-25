@@ -23,7 +23,6 @@
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
   body { background:var(--bg); color:var(--text); min-height:100vh; }
 
-  /* Header */
   .app-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white; padding: 1.25rem 1.5rem;
@@ -42,24 +41,21 @@
     border: none; background: rgba(255,255,255,0.15); color: white;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     font-size: 1rem; transition: all 0.2s; backdrop-filter: blur(10px);
+    position: relative;
   }
   .icon-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
   .icon-btn.connected { background: rgba(16,185,129,0.3); }
   .icon-btn.connected i { color: #6ee7b7; }
-
-  /* Warmup badge */
-  .warmup-badge {
-    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-    padding: 0.2rem 0.5rem; border-radius: 9999px;
-    background: rgba(255,255,255,0.2); color: white;
-    animation: pulse 2s infinite;
+  .live-dot {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #10b981; border: 2px solid white;
+    animation: blink 2s infinite;
   }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  /* Main */
   .main { max-width: 640px; margin: 0 auto; padding: 1.25rem; }
 
-  /* Tabs */
   .tab-bar {
     display: flex; gap: 0.5rem; margin-bottom: 1.25rem;
     background: var(--bg-card); padding: 0.35rem;
@@ -77,14 +73,11 @@
     color: white; box-shadow: 0 4px 12px rgba(99,102,241,0.3);
   }
 
-  /* Cards */
   .glass-card {
     background: var(--bg-card); border-radius: var(--radius);
     padding: 1.5rem; margin-bottom: 1rem;
     box-shadow: var(--shadow); border: 1px solid var(--border);
-    transition: transform 0.2s, box-shadow 0.2s;
   }
-  .glass-card:hover { box-shadow: var(--shadow-lg); }
 
   .form-label {
     display: block; font-size: 0.8rem; font-weight: 600;
@@ -103,7 +96,6 @@
   }
   .form-input::placeholder { color: var(--text-muted); }
 
-  /* Buttons */
   .btn-main {
     width: 100%; padding: 0.875rem; border: none; border-radius: 0.875rem;
     font-size: 0.95rem; font-weight: 700; cursor: pointer; color: white;
@@ -129,7 +121,6 @@
   .btn-cancelled { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 3px 10px rgba(239,68,68,0.3); }
   .btn-eskalated { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 3px 10px rgba(245,158,11,0.3); }
 
-  /* Result */
   .result-area { margin-top: 1rem; }
   .order-card {
     background: linear-gradient(135deg, #ffffff, #f8fafc);
@@ -153,15 +144,13 @@
   .bdg-empty { background: #f1f5f9; color: var(--text-muted); }
   .status-row { display: flex; gap: 0.5rem; margin-top: 1rem; }
 
-  /* Skeleton */
   .skeleton-box {
     background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-    background-size: 200% 100%; animation: shimmer 1.2s infinite;
+    background-size: 200% 100%; animation: shimmer 1s infinite;
     border-radius: 0.75rem; height: 100px; margin-bottom: 0.75rem;
   }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-  /* Loading */
   .loading-box { text-align: center; padding: 2rem; color: var(--text-muted); }
   .spinner {
     width: 32px; height: 32px;
@@ -171,7 +160,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Progress bar */
   .progress-bar {
     width: 100%; height: 3px;
     background: var(--border); border-radius: 9999px;
@@ -183,8 +171,7 @@
     height: 100%; width: 0%;
     background: linear-gradient(90deg, var(--primary), var(--primary-dark));
     border-radius: 9999px;
-    transition: width 0.3s ease;
-    animation: progressMove 2s ease-in-out infinite;
+    animation: progressMove 1.5s ease-in-out infinite;
   }
   @keyframes progressMove {
     0% { width: 0%; margin-left: 0%; }
@@ -192,7 +179,15 @@
     100% { width: 0%; margin-left: 100%; }
   }
 
-  /* Empty / Error */
+  .speed-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 0.2rem 0.5rem; border-radius: 9999px;
+    margin-left: 0.5rem;
+  }
+  .speed-fast { background: #d1fae5; color: #065f46; }
+  .speed-slow { background: #fef3c7; color: #92400e; }
+
   .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
   .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; }
   .empty-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
@@ -203,17 +198,6 @@
     display: flex; align-items: center; gap: 0.5rem;
   }
 
-  /* Speed badge */
-  .speed-badge {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    font-size: 0.7rem; font-weight: 700;
-    padding: 0.2rem 0.5rem; border-radius: 9999px;
-    margin-left: 0.5rem;
-  }
-  .speed-fast { background: #d1fae5; color: #065f46; }
-  .speed-slow { background: #fef3c7; color: #92400e; }
-
-  /* Modal */
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(15,23,42,0.6); backdrop-filter: blur(8px);
@@ -256,7 +240,6 @@
   }
   .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
 
-  /* Success modal */
   .success-modal .modal-box { text-align: center; padding: 2rem; max-width: 340px; }
   .success-icon {
     width: 64px; height: 64px; border-radius: 50%;
@@ -277,7 +260,6 @@
     box-shadow: 0 4px 15px rgba(99,102,241,0.3);
   }
 
-  /* Toast */
   .toast {
     position: fixed; bottom: 1.5rem; left: 50%;
     transform: translateX(-50%) translateY(120px);
@@ -317,9 +299,9 @@
       <div class="app-subtitle">Order Manager</div>
     </div>
     <div class="header-actions">
-      <span class="warmup-badge" id="warmupBadge" style="display:none">Warming...</span>
       <button class="icon-btn" id="btnSettings" title="Pengaturan">
         <i class="fas fa-cog"></i>
+        <span class="live-dot" id="liveDot" style="display:none"></span>
       </button>
     </div>
   </div>
@@ -410,6 +392,8 @@
 const GAS_URL_KEY = 'grapari_gas_url';
 let gasUrl = localStorage.getItem(GAS_URL_KEY) || '';
 let isWarmedUp = false;
+let pingInterval = null;
+let lastPingTime = 0;
 
 /* ================================
    UTILS
@@ -475,22 +459,30 @@ async function gasRequest(params) {
 }
 
 /* ================================
-   WARM-UP: Panaskan GAS saat load
+   WARM-UP: Jaga GAS tetap hidup
    ================================ */
-async function warmUp() {
-  if (!gasUrl || isWarmedUp) return;
-  $('warmupBadge').style.display = 'inline-flex';
+async function ping() {
+  if (!gasUrl) return;
   try {
     await gasRequest({ action: 'ping' });
     isWarmedUp = true;
-    $('warmupBadge').style.display = 'none';
+    lastPingTime = Date.now();
     $('btnSettings').classList.add('connected');
-    $('btnSettings').title = 'Terhubung & siap';
+    $('liveDot').style.display = 'block';
   } catch (e) {
-    $('warmupBadge').textContent = 'Offline';
-    $('warmupBadge').style.background = 'rgba(239,68,68,0.3)';
-    $('btnSettings').title = 'Gagal terhubung — klik untuk setting';
+    // Silent fail
   }
+}
+
+function startKeepAlive() {
+  if (pingInterval) clearInterval(pingInterval);
+  ping(); // ping sekarang
+  // Ping setiap 25 detik (GAS tidur setelah ~30-60 detik idle)
+  pingInterval = setInterval(ping, 25000);
+}
+
+function stopKeepAlive() {
+  if (pingInterval) clearInterval(pingInterval);
 }
 
 /* ================================
@@ -522,7 +514,7 @@ async function saveSettings() {
     resultDiv.textContent = '✅ Koneksi berhasil!';
     showToast('Tersimpan & terhubung!');
     $('btnSettings').classList.add('connected');
-    isWarmedUp = true;
+    startKeepAlive();
     setTimeout(closeSettings, 600);
   } catch (e) {
     resultDiv.style.background = '#fef2f2';
@@ -704,12 +696,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Enter') cekKIP();
   });
 
-  // Warm-up otomatis saat load
+  // Warm-up + keep alive
   if (gasUrl) {
-    warmUp();
+    startKeepAlive();
   } else {
     setTimeout(openSettings, 300);
   }
+
+  // Ping saat tab aktif lagi (user kembali dari tab lain)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && gasUrl) {
+      const idle = Date.now() - lastPingTime;
+      if (idle > 20000) ping(); // kalau idle > 20 detik, ping langsung
+    }
+  });
 });
 </script>
 
