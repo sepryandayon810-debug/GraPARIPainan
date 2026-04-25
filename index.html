@@ -172,18 +172,6 @@
 
 <div class="container">
 
-  <!-- ==============================
-       KONFIGURASI URL GAS (GANTI!)
-       ============================== -->
-  <div class="card" style="padding:12px 14px; margin-bottom:10px; background:#e8f0fe; border-color:#aecbfa;">
-    <label style="margin-bottom:4px; color:#174ea6;">🔗 URL Web App GAS</label>
-    <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" 
-           value="" style="font-size:13px; padding:10px;">
-    <div style="font-size:11px; color:#5f6368; margin-top:6px;">
-      Paste URL hasil deploy GAS di sini. Tanpa ini, semua fitur tidak akan jalan.
-    </div>
-  </div>
-
   <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="switchTab('tab1')">Cek & Update</button>
@@ -191,9 +179,7 @@
     <button class="tab" onclick="switchTab('tab3')">Cek KIP</button>
   </div>
 
-  <!-- ==============================
-       PANEL 1: CEK ORDER + UPDATE STATUS
-       ============================== -->
+  <!-- PANEL 1: CEK ORDER + UPDATE STATUS -->
   <div id="tab1" class="panel active">
     <div class="card">
       <div class="form-group">
@@ -205,9 +191,7 @@
     </div>
   </div>
 
-  <!-- ==============================
-       PANEL 2: REKAP / FILTER ORDER
-       ============================== -->
+  <!-- PANEL 2: REKAP / FILTER ORDER -->
   <div id="tab2" class="panel">
     <div class="card">
       <div style="display:flex; gap:8px;">
@@ -250,9 +234,7 @@
     </div>
   </div>
 
-  <!-- ==============================
-       PANEL 3: CEK KIP (by Nomor Antre Aja)
-       ============================== -->
+  <!-- PANEL 3: CEK KIP -->
   <div id="tab3" class="panel">
     <div class="card">
       <div class="form-group">
@@ -271,16 +253,9 @@
 
 <script>
 // ==============================
-// UTILS
+// AUTO-DETECT BASE URL (SAMA DENGAN URL HALAMAN INI)
 // ==============================
-function getGasUrl() {
-  const url = document.getElementById('gasUrl').value.trim();
-  if (!url) {
-    alert('⚠️ URL Web App GAS belum diisi! Paste di kotak biru paling atas.');
-    return null;
-  }
-  return url;
-}
+const baseUrl = window.location.href.split('?')[0];
 
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -308,8 +283,6 @@ function badgeClass(status) {
 // 1. CEK ORDER BY NOMOR
 // ==============================
 async function cekOrderByNomor() {
-  const url = getGasUrl();
-  if (!url) return;
   const nomor = document.getElementById('inpNomor').value.trim();
   if (!nomor) { alert('Nomor Pelaporan wajib diisi'); return; }
 
@@ -317,7 +290,7 @@ async function cekOrderByNomor() {
   resDiv.innerHTML = '<div class="loading">⏳ Mencari di Google Sheets...</div>';
 
   try {
-    const resp = await fetch(`${url}?action=cekOrderByNomor&nomor=${encodeURIComponent(nomor)}`);
+    const resp = await fetch(`${baseUrl}?action=cekOrderByNomor&nomor=${encodeURIComponent(nomor)}`);
     const data = await resp.json();
 
     if (!data.success) {
@@ -361,20 +334,16 @@ async function cekOrderByNomor() {
 }
 
 // ==============================
-// UPDATE STATUS (PAKAI GET, BUKAN POST)
+// UPDATE STATUS (GET)
 // ==============================
 async function updateStatus(nomor, status, idx) {
-  const url = getGasUrl();
-  if (!url) return;
-
   const card = document.getElementById(`card-${idx}`);
   const btns = card.querySelectorAll('.status-actions .btn');
   btns.forEach(b => b.disabled = true);
 
   try {
-    // PAKAI GET (URL parameter) — tidak ada CORS preflight
     const resp = await fetch(
-      `${url}?action=updateStatus&nomorPelaporan=${encodeURIComponent(nomor)}&statusBaru=${encodeURIComponent(status)}`
+      `${baseUrl}?action=updateStatus&nomorPelaporan=${encodeURIComponent(nomor)}&statusBaru=${encodeURIComponent(status)}`
     );
     const data = await resp.json();
 
@@ -397,8 +366,6 @@ async function updateStatus(nomor, status, idx) {
 // 2. REKAP ORDER BY FILTER
 // ==============================
 async function cekOrderByFilter() {
-  const url = getGasUrl();
-  if (!url) return;
   const kode = document.getElementById('inpKode').value;
   const bulan = document.getElementById('inpBulan').value;
   const tahun = document.getElementById('inpTahun').value;
@@ -407,7 +374,7 @@ async function cekOrderByFilter() {
   resDiv.innerHTML = '<div class="loading">⏳ Mengambil data dari Sheet GABUNGAN ORDER...</div>';
 
   try {
-    const resp = await fetch(`${url}?action=cekOrderByFilter&kode=${encodeURIComponent(kode)}&bulan=${encodeURIComponent(bulan)}&tahun=${encodeURIComponent(tahun)}`);
+    const resp = await fetch(`${baseUrl}?action=cekOrderByFilter&kode=${encodeURIComponent(kode)}&bulan=${encodeURIComponent(bulan)}&tahun=${encodeURIComponent(tahun)}`);
     const data = await resp.json();
 
     if (!data.success) {
@@ -455,8 +422,6 @@ async function cekOrderByFilter() {
 // 3. CEK KIP
 // ==============================
 async function cekKIP() {
-  const url = getGasUrl();
-  if (!url) return;
   const id = document.getElementById('inpKIP').value.trim();
   if (!id) { alert('ID/Nomor Antre Aja wajib diisi'); return; }
 
@@ -464,7 +429,7 @@ async function cekKIP() {
   resDiv.innerHTML = '<div class="loading">⏳ Mencari ID di Sheet DATA PAINAN...</div>';
 
   try {
-    const resp = await fetch(`${url}?action=cekKIP&id=${encodeURIComponent(id)}`);
+    const resp = await fetch(`${baseUrl}?action=cekKIP&id=${encodeURIComponent(id)}`);
     const data = await resp.json();
 
     if (!data.success) {
