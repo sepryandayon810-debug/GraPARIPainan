@@ -253,10 +253,8 @@
 
 <script>
 // ==============================
-// AUTO-DETECT BASE URL (SAMA DENGAN URL HALAMAN INI)
+// UTILS
 // ==============================
-const baseUrl = window.location.href.split('?')[0];
-
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -280,189 +278,181 @@ function badgeClass(status) {
 }
 
 // ==============================
-// 1. CEK ORDER BY NOMOR
+// 1. CEK ORDER BY NOMOR (google.script.run)
 // ==============================
-async function cekOrderByNomor() {
+function cekOrderByNomor() {
   const nomor = document.getElementById('inpNomor').value.trim();
   if (!nomor) { alert('Nomor Pelaporan wajib diisi'); return; }
 
   const resDiv = document.getElementById('res1');
   resDiv.innerHTML = '<div class="loading">⏳ Mencari di Google Sheets...</div>';
 
-  try {
-    const resp = await fetch(`${baseUrl}?action=cekOrderByNomor&nomor=${encodeURIComponent(nomor)}`);
-    const data = await resp.json();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data.success) {
+        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+        return;
+      }
+      if (data.total === 0) {
+        resDiv.innerHTML = '<div class="empty">Nomor Pelaporan tidak ditemukan di Sheet DATA PAINAN.</div>';
+        return;
+      }
 
-    if (!data.success) {
-      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-      return;
-    }
+      let html = '<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Ditemukan ' + data.total + ' data:</div>';
+      html += '<div class="result-box">';
 
-    if (data.total === 0) {
-      resDiv.innerHTML = '<div class="empty">Nomor Pelaporan tidak ditemukan di Sheet DATA PAINAN.</div>';
-      return;
-    }
-
-    let html = `<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Ditemukan ${data.total} data:</div>`;
-    html += '<div class="result-box">';
-
-    data.data.forEach((item, idx) => {
-      html += `
-        <div class="order-card" id="card-${idx}">
-          <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
-          <div class="order-meta">
-            Nomor: <b>${item.nomorPelaporan}</b><br>
-            NIK CS: ${item.nikCS || '-'}<br>
-            Layanan: ${item.jenisLayanan || '-'}<br>
-            Keterangan: ${item.keterangan || '-'}<br>
-            Status saat ini: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || 'BELUM ADA'}</span>
+      data.data.forEach(function(item, idx) {
+        html += `
+          <div class="order-card" id="card-${idx}">
+            <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
+            <div class="order-meta">
+              Nomor: <b>${item.nomorPelaporan}</b><br>
+              NIK CS: ${item.nikCS || '-'}<br>
+              Layanan: ${item.jenisLayanan || '-'}<br>
+              Keterangan: ${item.keterangan || '-'}<br>
+              Status saat ini: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || 'BELUM ADA'}</span>
+            </div>
+            <div class="status-actions">
+              <button class="btn btn-success" onclick="updateStatus('${item.nomorPelaporan}', 'CLOSED', ${idx})">✅ CLOSED</button>
+              <button class="btn btn-danger" onclick="updateStatus('${item.nomorPelaporan}', 'CANCELLED', ${idx})">❌ CANCELLED</button>
+              <button class="btn btn-warning" onclick="updateStatus('${item.nomorPelaporan}', 'ESKALATED', ${idx})">⚠️ ESKALATED</button>
+            </div>
           </div>
-          <div class="status-actions">
-            <button class="btn btn-success" onclick="updateStatus('${item.nomorPelaporan}', 'CLOSED', ${idx})">✅ CLOSED</button>
-            <button class="btn btn-danger" onclick="updateStatus('${item.nomorPelaporan}', 'CANCELLED', ${idx})">❌ CANCELLED</button>
-            <button class="btn btn-warning" onclick="updateStatus('${item.nomorPelaporan}', 'ESKALATED', ${idx})">⚠️ ESKALATED</button>
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-    resDiv.innerHTML = html;
-
-  } catch (err) {
-    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
-  }
+        `;
+      });
+      html += '</div>';
+      resDiv.innerHTML = html;
+    })
+    .withFailureHandler(function(err) {
+      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
+    })
+    .cekOrderByNomor(nomor);
 }
 
 // ==============================
-// UPDATE STATUS (GET)
+// UPDATE STATUS (google.script.run)
 // ==============================
-async function updateStatus(nomor, status, idx) {
-  const card = document.getElementById(`card-${idx}`);
+function updateStatus(nomor, status, idx) {
+  const card = document.getElementById('card-' + idx);
   const btns = card.querySelectorAll('.status-actions .btn');
-  btns.forEach(b => b.disabled = true);
+  btns.forEach(function(b) { b.disabled = true; });
 
-  try {
-    const resp = await fetch(
-      `${baseUrl}?action=updateStatus&nomorPelaporan=${encodeURIComponent(nomor)}&statusBaru=${encodeURIComponent(status)}`
-    );
-    const data = await resp.json();
-
-    if (data.success) {
-      showToast(`✅ ${nomor} → ${status}`);
-      const badge = card.querySelector('.badge');
-      badge.className = `badge ${badgeClass(status)}`;
-      badge.textContent = status;
-    } else {
-      alert('❌ Gagal update: ' + data.error);
-    }
-  } catch (err) {
-    alert('❌ Error: ' + err.message);
-  } finally {
-    btns.forEach(b => b.disabled = false);
-  }
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (data.success) {
+        showToast('✅ ' + nomor + ' → ' + status);
+        const badge = card.querySelector('.badge');
+        badge.className = 'badge ' + badgeClass(status);
+        badge.textContent = status;
+      } else {
+        alert('❌ Gagal update: ' + data.error);
+      }
+      btns.forEach(function(b) { b.disabled = false; });
+    })
+    .withFailureHandler(function(err) {
+      alert('❌ Error: ' + err.message);
+      btns.forEach(function(b) { b.disabled = false; });
+    })
+    .updateStatus(nomor, status);
 }
 
 // ==============================
-// 2. REKAP ORDER BY FILTER
+// 2. REKAP ORDER BY FILTER (google.script.run)
 // ==============================
-async function cekOrderByFilter() {
+function cekOrderByFilter() {
   const kode = document.getElementById('inpKode').value;
   const bulan = document.getElementById('inpBulan').value;
-  const tahun = document.getElementById('inpTahun').value;
+  const tahun = document.getElementById('inpTahun').value.toString();
 
   const resDiv = document.getElementById('res2');
   resDiv.innerHTML = '<div class="loading">⏳ Mengambil data dari Sheet GABUNGAN ORDER...</div>';
 
-  try {
-    const resp = await fetch(`${baseUrl}?action=cekOrderByFilter&kode=${encodeURIComponent(kode)}&bulan=${encodeURIComponent(bulan)}&tahun=${encodeURIComponent(tahun)}`);
-    const data = await resp.json();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data.success) {
+        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+        return;
+      }
+      if (data.total === 0) {
+        resDiv.innerHTML = '<div class="empty">Tidak ada order untuk filter ini.</div>';
+        return;
+      }
 
-    if (!data.success) {
-      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-      return;
-    }
-
-    if (data.total === 0) {
-      resDiv.innerHTML = '<div class="empty">Tidak ada order untuk filter ini.</div>';
-      return;
-    }
-
-    const s = data.summary;
-    let html = `
-      <div class="summary-bar">
-        <div class="summary-item"><div class="summary-num" style="color:var(--success)">${s.CLOSED}</div><div class="summary-label">Closed</div></div>
-        <div class="summary-item"><div class="summary-num" style="color:var(--danger)">${s.CANCELLED}</div><div class="summary-label">Cancelled</div></div>
-        <div class="summary-item"><div class="summary-num" style="color:var(--warning)">${s.ESKALATED}</div><div class="summary-label">Eskalated</div></div>
-        <div class="summary-item"><div class="summary-num" style="color:var(--primary)">${data.total}</div><div class="summary-label">Total</div></div>
-      </div>
-      <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Detail ${data.total} order:</div>
-      <div class="result-box">
-    `;
-
-    data.data.forEach(item => {
-      html += `
-        <div class="order-card">
-          <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
-          <div class="order-meta">
-            Nomor: <b>${item.nomorPelaporan}</b> &bull; ${item.awalan} ${item.bulan} ${item.tahun}<br>
-            Status: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || '-'}</span>
-          </div>
+      const s = data.summary;
+      let html = `
+        <div class="summary-bar">
+          <div class="summary-item"><div class="summary-num" style="color:var(--success)">${s.CLOSED}</div><div class="summary-label">Closed</div></div>
+          <div class="summary-item"><div class="summary-num" style="color:var(--danger)">${s.CANCELLED}</div><div class="summary-label">Cancelled</div></div>
+          <div class="summary-item"><div class="summary-num" style="color:var(--warning)">${s.ESKALATED}</div><div class="summary-label">Eskalated</div></div>
+          <div class="summary-item"><div class="summary-num" style="color:var(--primary)">${data.total}</div><div class="summary-label">Total</div></div>
         </div>
+        <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Detail ${data.total} order:</div>
+        <div class="result-box">
       `;
-    });
-    html += '</div>';
-    resDiv.innerHTML = html;
 
-  } catch (err) {
-    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
-  }
+      data.data.forEach(function(item) {
+        html += `
+          <div class="order-card">
+            <div class="order-title">${item.namaPelanggan || 'Tanpa Nama'}</div>
+            <div class="order-meta">
+              Nomor: <b>${item.nomorPelaporan}</b> &bull; ${item.awalan} ${item.bulan} ${item.tahun}<br>
+              Status: <span class="badge ${badgeClass(item.statusPelaporan)}">${item.statusPelaporan || '-'}</span>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      resDiv.innerHTML = html;
+    })
+    .withFailureHandler(function(err) {
+      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
+    })
+    .cekOrderByFilter(kode, bulan, tahun);
 }
 
 // ==============================
-// 3. CEK KIP
+// 3. CEK KIP (google.script.run)
 // ==============================
-async function cekKIP() {
+function cekKIP() {
   const id = document.getElementById('inpKIP').value.trim();
   if (!id) { alert('ID/Nomor Antre Aja wajib diisi'); return; }
 
   const resDiv = document.getElementById('res3');
   resDiv.innerHTML = '<div class="loading">⏳ Mencari ID di Sheet DATA PAINAN...</div>';
 
-  try {
-    const resp = await fetch(`${baseUrl}?action=cekKIP&id=${encodeURIComponent(id)}`);
-    const data = await resp.json();
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data.success) {
+        resDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+        return;
+      }
+      if (data.total === 0) {
+        resDiv.innerHTML = '<div class="empty">ID tidak ditemukan.</div>';
+        return;
+      }
 
-    if (!data.success) {
-      resDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-      return;
-    }
-
-    if (data.total === 0) {
-      resDiv.innerHTML = '<div class="empty">ID tidak ditemukan.</div>';
-      return;
-    }
-
-    let html = '<div class="result-box">';
-    data.data.forEach(item => {
-      html += `
-        <div class="order-card">
-          <div class="order-title">KIP ID: ${item.nomorAntreAja}</div>
-          <div class="order-meta">
-            Tanggal: ${item.tanggal || '-'}<br>
-            Antrian: ${item.nomorAntrian || '-'}<br>
-            Petugas (NIK): ${item.nikCS || '-'}<br>
-            Indihome: ${item.indihome || '-'}<br>
-            Evidence: <a href="${item.evidence || '#'}" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
+      let html = '<div class="result-box">';
+      data.data.forEach(function(item) {
+        html += `
+          <div class="order-card">
+            <div class="order-title">KIP ID: ${item.nomorAntreAja}</div>
+            <div class="order-meta">
+              Tanggal: ${item.tanggal || '-'}<br>
+              Antrian: ${item.nomorAntrian || '-'}<br>
+              Petugas (NIK): ${item.nikCS || '-'}<br>
+              Indihome: ${item.indihome || '-'}<br>
+              Evidence: <a href="${item.evidence || '#'}" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
+            </div>
           </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-    resDiv.innerHTML = html;
-
-  } catch (err) {
-    resDiv.innerHTML = `<div class="error">❌ Gagal fetch: ${err.message}</div>`;
-  }
+        `;
+      });
+      html += '</div>';
+      resDiv.innerHTML = html;
+    })
+    .withFailureHandler(function(err) {
+      resDiv.innerHTML = '<div class="error">❌ Gagal: ' + err.message + '</div>';
+    })
+    .cekKIP(id);
 }
 </script>
 
