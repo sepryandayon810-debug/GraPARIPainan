@@ -305,7 +305,7 @@ function badgeClass(status) {
 }
 
 // ==============================
-// 1. CEK ORDER BY NOMOR + UPDATE
+// 1. CEK ORDER BY NOMOR
 // ==============================
 async function cekOrderByNomor() {
   const url = getGasUrl();
@@ -360,26 +360,26 @@ async function cekOrderByNomor() {
   }
 }
 
+// ==============================
+// UPDATE STATUS (PAKAI GET, BUKAN POST)
+// ==============================
 async function updateStatus(nomor, status, idx) {
   const url = getGasUrl();
   if (!url) return;
 
-  // Disable tombol di card ini
   const card = document.getElementById(`card-${idx}`);
   const btns = card.querySelectorAll('.status-actions .btn');
   btns.forEach(b => b.disabled = true);
 
   try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'updateStatus', nomorPelaporan: nomor, statusBaru: status })
-    });
+    // PAKAI GET (URL parameter) — tidak ada CORS preflight
+    const resp = await fetch(
+      `${url}?action=updateStatus&nomorPelaporan=${encodeURIComponent(nomor)}&statusBaru=${encodeURIComponent(status)}`
+    );
     const data = await resp.json();
 
     if (data.success) {
       showToast(`✅ ${nomor} → ${status}`);
-      // Update badge visual langsung tanpa reload
       const badge = card.querySelector('.badge');
       badge.className = `badge ${badgeClass(status)}`;
       badge.textContent = status;
@@ -487,7 +487,7 @@ async function cekKIP() {
             Antrian: ${item.nomorAntrian || '-'}<br>
             Petugas (NIK): ${item.nikCS || '-'}<br>
             Indihome: ${item.indihome || '-'}<br>
-            Evidence: <a href="${item.evidence || '#'})" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
+            Evidence: <a href="${item.evidence || '#'}" target="_blank" style="color:var(--primary)">${item.evidence || '-'}</a>
           </div>
         </div>
       `;
